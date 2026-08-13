@@ -6,7 +6,7 @@ export default function PublicLayout() {
   return (
     <div className="min-h-screen bg-cream">
       <Navigation />
-      <main className="flex items-center justify-center py-12 px-4">
+      <main>
         <Outlet />
       </main>
       <Footer />
