@@ -1,0 +1,10 @@
+{
+  "description": "Track your expenses and budgets with real-time alerts to stay on top of your finances and avoid overspending effortlessly.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
