@@ -1,20 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../../contexts/AuthContext'
 
 export default function SignUp() {
-  const { signup, user, isLoading } = useAuth()
+  const { signup } = useAuth()
   const navigate = useNavigate()
   const [form, setForm] = useState({ name: '', username: '', email: '', password: '', confirm: '' })
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
-
-  useEffect(() => {
-    if (!isLoading && user) {
-      navigate('/app/dashboard', { replace: true })
-    }
-  }, [isLoading, user, navigate])
 
   const validate = () => {
     const e: Record<string, string> = {}

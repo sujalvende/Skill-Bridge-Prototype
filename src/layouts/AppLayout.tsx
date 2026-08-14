@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 
 const navItems = [
@@ -43,32 +43,14 @@ const navItems = [
 ]
 
 export default function AppLayout() {
-  const { user, logout, isLoading, isLoggedIn } = useAuth()
+  const { user, logout } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  useEffect(() => {
-    if (!isLoading && !isLoggedIn) {
-      navigate('/login', { replace: true })
-    }
-  }, [isLoading, isLoggedIn, navigate])
-
-  const handleLogout = async () => {
-    try {
-      await logout()
-      navigate('/login', { replace: true })
-    } catch {
-      navigate('/login', { replace: true })
-    }
-  }
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#F5F4F0] flex items-center justify-center text-sb-muted">
-        Loading your workspace…
-      </div>
-    )
+  const handleLogout = () => {
+    logout()
+    navigate('/')
   }
 
   return (

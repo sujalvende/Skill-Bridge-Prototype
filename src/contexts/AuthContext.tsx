@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
-import { supabase } from '../lib/supabase'
 
 export interface Skill {
   name: string
@@ -32,10 +31,9 @@ export interface User {
 interface AuthContextValue {
   user: User | null
   isLoggedIn: boolean
-  isLoading: boolean
-  login: (email: string, password: string) => Promise<void>
-  signup: (name: string, username: string, email: string, password: string) => Promise<void>
-  logout: () => Promise<void>
+  login: (email: string, _password: string) => Promise<void>
+  signup: (name: string, username: string, email: string, _password: string) => Promise<void>
+  logout: () => void
   completeOnboarding: (teachSkills: string[], learnSkills: string[]) => void
   addCredits: (amount: number) => void
   spendCredits: (amount: number) => boolean
@@ -68,83 +66,58 @@ const DEFAULT_USER: User = {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-function mapSupabaseUserToAppUser(email?: string | null, metadata?: Record<string, unknown>): User | null {
-  const normalizedName = typeof metadata?.full_name === 'string' ? metadata.full_name : DEFAULT_USER.name
-  const normalizedUsername = typeof metadata?.username === 'string' ? metadata.username : DEFAULT_USER.username
+function loadUser(): User | null {
+  try {
+    const raw = localStorage.getItem('sb_user')
+    return raw ? (JSON.parse(raw) as User) : null
+  } catch {
+    return null
+  }
+}
 
-  return {
-    ...DEFAULT_USER,
-    name: normalizedName,
-    username: normalizedUsername,
-    email: email || DEFAULT_USER.email,
-    onboardingComplete: true,
+function saveUser(user: User | null) {
+  if (user) {
+    localStorage.setItem('sb_user', JSON.stringify(user))
+  } else {
+    localStorage.removeItem('sb_user')
   }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [user, setUser] = useState<User | null>(() => loadUser())
 
   useEffect(() => {
-    let mounted = true
+    saveUser(user)
+  }, [user])
 
-    const syncSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession()
-      if (!mounted) return
-      if (error || !session) {
-        setUser(null)
-        setIsLoading(false)
-        return
-      }
-
-      setUser(mapSupabaseUserToAppUser(session.user.email, session.user.user_metadata))
-      setIsLoading(false)
+  const login = async (email: string, _password: string) => {
+    await new Promise(r => setTimeout(r, 900))
+    const saved = loadUser()
+    if (saved && saved.email === email) {
+      setUser(saved)
+    } else {
+      const u = { ...DEFAULT_USER, email, onboardingComplete: true, title: 'The Logic Weaver' }
+      setUser(u)
     }
-
-    syncSession()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!mounted) return
-      setUser(session ? mapSupabaseUserToAppUser(session.user.email, session.user.user_metadata) : null)
-      setIsLoading(false)
-    })
-
-    return () => {
-      mounted = false
-      subscription.unsubscribe()
-    }
-  }, [])
-
-  const login = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw error
-
-    const { data: { session } } = await supabase.auth.getSession()
-    setUser(session ? mapSupabaseUserToAppUser(session.user.email, session.user.user_metadata) : null)
   }
 
-  const signup = async (name: string, username: string, email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
+  const signup = async (name: string, username: string, email: string, _password: string) => {
+    await new Promise(r => setTimeout(r, 900))
+    const newUser: User = {
+      ...DEFAULT_USER,
+      name,
+      username,
       email,
-      password,
-      options: {
-        data: {
-          full_name: name,
-          username,
-        },
-      },
-    })
-
-    if (error) throw error
-    const { data: { session } } = await supabase.auth.getSession()
-    setUser(session ? mapSupabaseUserToAppUser(session.user.email, session.user.user_metadata) : null)
+      title: 'The Seeker',
+      credits: 10,
+      skills: [],
+      stats: { problemsSolved: 0, studentsTaught: 0, sessions: 0, rating: 0, badges: 0, streak: 0 },
+      onboardingComplete: false,
+    }
+    setUser(newUser)
   }
 
-  const logout = async () => {
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
-    setUser(null)
-  }
+  const logout = () => setUser(null)
 
   const completeOnboarding = (teachSkills: string[], _learnSkills: string[]) => {
     setUser(u => {
@@ -170,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoggedIn: !!user, isLoading, login, signup, logout, completeOnboarding, addCredits, spendCredits }}>
+    <AuthContext.Provider value={{ user, isLoggedIn: !!user, login, signup, logout, completeOnboarding, addCredits, spendCredits }}>
       {children}
     </AuthContext.Provider>
   )
