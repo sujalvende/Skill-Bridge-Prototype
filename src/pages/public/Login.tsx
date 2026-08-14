@@ -1,15 +1,21 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../../contexts/AuthContext'
 
 export default function Login() {
-  const { login, user } = useAuth()
+  const { login, user, isLoading } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      navigate('/app/dashboard', { replace: true })
+    }
+  }, [isLoading, user, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -18,7 +24,7 @@ export default function Login() {
     setLoading(true)
     try {
       await login(email, password)
-      navigate('/app/dashboard')
+      navigate('/app/dashboard', { replace: true })
     } catch {
       setError('Invalid email or password.')
     } finally {
